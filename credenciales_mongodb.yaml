@@ -1,6 +1,6 @@
 # llave: valor
-ip_servidor: xxx
-puerto_servidor: xxx
-usuario: xxx
-password: xxx
-auth_db: xxx
+ip_server: "148.224.249.19"
+port_server: 27017
+user: "est217273256"
+password: "est217273256UDG"
+auth_db: "UDG_DB"
