@@ -6,7 +6,7 @@
 import yaml
 from pathlib import Path
 from pymongo import MongoClient
-
+import pandas as pd
 import pprint
 
 # Utilizamos pprint para tener una mejor visualización de
@@ -71,16 +71,29 @@ doc_2 = documentos[2]
 print(doc_2["y"])
 
 # %% Definimos rutas a carpetas con conjuntos de datos:
-
-data_path = Path(Path.home())
-
-files_in_path = list(data_path.iterdir())
-
-# %%
+Path.home()
 
 
+#%%  absolute route
+
+data_path = Path("d://ALMACENAMIENTO_BBDD/datasets")
+data_path
+#%% Relative path
+data_path = Path("datasets")
+data_path
 
 #%%
+
+files_in_path = list(data_path.iterdir())
+files_in_path
+# %%
+data_file = files_in_path[0]
+data_file
+
+#%% We select the csv file that we are gonna workaaaaaaaaa
+df = pd.read_csv(data_file)
+df
+# %%
 
 
 
