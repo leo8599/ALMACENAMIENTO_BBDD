@@ -33,9 +33,9 @@ data_db
 # Base de datos de autenticación
 
 servidor = MongoClient(
-    data_db["ip_servidor"],
-    data_db["puerto_servidor"],
-    username=data_db["usuario"],
+    data_db["ip_server"],
+    data_db["port_server"],
+    username=data_db["user"],
     password=data_db["password"],
     authSource=data_db["auth_db"]
 )
@@ -46,8 +46,99 @@ servidor
 
 dbs = list(servidor.list_databases())
 
-dbs
-# dbs[0]["name"]
+print(dbs)
+
+my_db = servidor[dbs[0]["name"]]
+my_db
+
+# %% Seleccionamos la colección con la que vamos a trabajar
+
+my_coll = my_db["cars_dataset"]
+my_coll
+
+# %% Para probar, extraemos un documento de la colección
+
+test_doc = my_coll.find_one()
+
+pp.pprint(test_doc)
+# %% now we are filtering using queries
+
+#%% we extract docs from a collection using emopty query
+query={}
+
+cursor = my_coll.find(query)
+resultados = list(cursor)
+resultados
+print(len(resultados))
+# %%
+## Las condiciones para filtrar los documentos en la colección,
+# las expresamos mediante operadores:
+
+# %% Operador de comparación "$eq" (equal)
+# Sirve para buscar elementos cuyo atributo en particular
+# es igual a la condición.
+
+# 
+
+# Sintaxis: query = {"atributo": {"$eq": "condición"}}
+
+query = {"Make": {"$eq": "Honda"}}
+cursor = my_coll.find(query)
+
+resultados = list(cursor)
+resultados
+
+print(len(resultados))
+
+for elem in resultados:
+    print(elem["Make"])
+
+pp.pprint(resultados[0])
 
 # %%
+# Sintaxis: query = {"atributo": {"$eq": "condición"}}
 
+query = {"Make": {"$eq": "Honda"}}
+
+atributos = {"Make":1,"Price":1,"Year":1}
+
+cursor = my_coll.find(query,atributos)
+
+resultados = list(cursor)
+resultados
+
+# %% Operadores de comparación:
+
+#  "$gt" (greater than | mayor que)
+#  "$gte" (greater than equal | mayor igual que)
+
+#  "$lt" (lesser than | menor que)
+#  "$lte" (lesser than equal | menor igual que)
+# $and
+
+query = {"Price": {"$gt": 100000},"Year": {"$gt": 2019},"Make": {"$eq": "Honda"}}
+
+atributos = {"Make":1,"Price":1,"Year":1,"Model":1}
+
+cursor = my_coll.find(query,atributos)
+
+resultados = list(cursor)
+resultados
+
+for r in resultados:
+    print(f'{r["Make"]} | {r["Price"]} | {r["Year"]} | {r["Model"]}')
+# %% using $or or $and
+query = {"$or":[{"Price": {"$gt": 100000},"Year": {"$gt": 2019},"Make": {"$eq": "Honda"}},{"Price": {"$gt": 100000},"Year": {"$gt": 2019},"Make": {"$eq": "Jeep"}}]}
+
+atributos = {"Make":1,"Price":1,"Year":1,"Model":1}
+
+cursor = my_coll.find(query,atributos)
+
+resultados = list(cursor)
+resultados
+
+for r in resultados:
+    print(f'{r["Make"]} | {r["Price"]} | {r["Year"]} | {r["Model"]}')
+
+
+# %%

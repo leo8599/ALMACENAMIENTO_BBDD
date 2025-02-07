@@ -93,8 +93,32 @@ data_file
 #%% We select the csv file that we are gonna workaaaaaaaaa
 df = pd.read_csv(data_file)
 df
+# %% Transform df into a list of dicks 
+df_dict = df.to_dict(orient='records')
+df_dict[69]
+
+# %% Instert file to DB
+cars_coll = my_db["cars_dataset"]
+cars_coll
+
+doc = df_dict[0]
+doc
 # %%
+cars_coll.insert_one(doc)
 
 
 
 
+# %% eliminate all elements from cars_coll
+cars_coll.delete_many({})
+# %% delete cars_coll collection
+cars_coll.drop()
+
+# %% for cycle to insert one by one all the elelemnts  from the dataframe dick
+for doc in df_dict:
+    print(doc)
+    cars_coll.insert_one(doc)
+# %% insert multiple docs from the df dick in one line/function
+cars_coll.insert_many(df_dict)
+
+# %%
