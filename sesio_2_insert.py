@@ -87,7 +87,7 @@ data_path
 files_in_path = list(data_path.iterdir())
 files_in_path
 # %%
-data_file = files_in_path[0]
+data_file = files_in_path[1]
 data_file
 
 #%% We select the csv file that we are gonna workaaaaaaaaa
@@ -98,7 +98,7 @@ df_dict = df.to_dict(orient='records')
 df_dict[69]
 
 # %% Instert file to DB
-cars_coll = my_db["cars_dataset"]
+cars_coll = my_db["hotels_dataset"]
 cars_coll
 
 doc = df_dict[0]
