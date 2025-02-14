@@ -11,6 +11,9 @@ from pymongo import errors
 import calendar  # Import the calendar modu
 # utilizamos `pandas` para manipular los datos
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Usamos `pprint` para imprimir mejor los diccionarios
 import pprint
@@ -96,34 +99,22 @@ print("")
 
 for r in resultados:
     print(f'{r["Booking_ID"]} | {r["booking_status"]}')
-
-# ### 2: Calcule las cancelaciones por mes (sin considerar año)
 #%%
-query = {"booking_status": {"$eq": "Canceled"}}
-atributos = {"Booking_ID": 1, "booking_status": 1, "arrival_month": 1}
+# ### 2: Calcule las cancelaciones por mes (sin considerar año)
 
-# Assuming data_coll is a pymongo collection object
-cursor = data_coll.find(query, atributos)
-df = pd.DataFrame(list(cursor))
+atributo = "arrival_month"
 
-# Handle potential missing or invalid 'arrival_month' values more efficiently
-df = df[df['arrival_month'].between(1, 12, inclusive='both')].copy() #Filter out invalid month numbers and create a copy to avoid SettingWithCopyWarning
+pipeline = [
+    {"$match": {"booking_status": "Canceled"}},
+    {"$group": {"_id": f"${atributo}", "Count": {"$sum": 1}}},
+    {"$sort" : {"Count":-1}}
+]
 
-# Convert 'arrival_month' to month names
-df['arrival_month_name'] = df['arrival_month'].apply(lambda x: calendar.month_name[x])
+cursor = data_coll.aggregate(pipeline)
+res = list(cursor)
+res_df = pd.DataFrame(res)
+res_df
 
-# Calculate monthly cancellation counts
-monthly_counts = df['arrival_month_name'].value_counts().sort_index().to_dict() #Sorts the months in order
-
-total_count = len(df)
-
-
-print(f'En total existen {total_count} cancelaciones en esta base de datos')
-print("")
-
-print("\nMonthly Cancellation Counts:")
-for month_name, count in monthly_counts.items():
-    print(f"{month_name}: {count}")
 #%%
 # ### 3: Identifique las reservaciones activas
 
@@ -147,111 +138,163 @@ for r in resultados:
 
 #%%
 # ### 4: Calcule las reservaciones mensuales (sin considerar año)
-query = {"booking_status": {"$eq": "Not_Canceled"}}
-atributos = {"Booking_ID": 1, "booking_status": 1, "arrival_month": 1}
 
-# Assuming data_coll is a pymongo collection object
-cursor = data_coll.find(query, atributos)
-df = pd.DataFrame(list(cursor))
+atributo = "arrival_month"
 
-# Handle potential missing or invalid 'arrival_month' values more efficiently
-df = df[df['arrival_month'].between(1, 12, inclusive='both')].copy() #Filter out invalid month numbers and create a copy to avoid SettingWithCopyWarning
+pipeline = [
+    {"$match": {}},
+    {"$group": {"_id": f"${atributo}", "Total reservaciones mensuales": {"$sum": 1}}},
+    {"$sort" : {"Total reservaciones mensuales":-1}}
+]
 
-# Convert 'arrival_month' to month names
-df['arrival_month_name'] = df['arrival_month'].apply(lambda x: calendar.month_name[x])
+cursor = data_coll.aggregate(pipeline)
+res = list(cursor)
+res_df = pd.DataFrame(res)
+res_df
 
-# Calculate monthly cancellation counts
-monthly_counts = df['arrival_month_name'].value_counts().sort_index().to_dict() #Sorts the months in order
-
-total_count = len(df)
-
-print(f'En total existen {total_count} reservaciones activas en esta base de datos')
-print("")
-
-print("\nMonthly Active Counts:")
-for month_name, count in monthly_counts.items():
-    print(f"{month_name}: {count}")
 #%%
 # ### 5: Identifique los meses con reservaciones con niños
 
-query = {"booking_status": {"$eq": "Not_Canceled"},"no_of_children": {"$gt": 0}}
-atributos = {"Booking_ID": 1, "booking_status": 1, "arrival_month": 1}
+atributo = "arrival_month"
 
-# Assuming data_coll is a pymongo collection object
-cursor = data_coll.find(query, atributos)
-df = pd.DataFrame(list(cursor))
+pipeline = [
+    {"$match": {"no_of_children": {"$gt":0}}},
+    {"$group": {"_id": f"${atributo}", "Total Niños": {"$sum": 1}}},
+    {"$sort" : {"Total Niños":-1}}
+]
 
-# Handle potential missing or invalid 'arrival_month' values more efficiently
-df = df[df['arrival_month'].between(1, 12, inclusive='both')].copy() #Filter out invalid month numbers and create a copy to avoid SettingWithCopyWarning
-
-# Convert 'arrival_month' to month names
-df['arrival_month_name'] = df['arrival_month'].apply(lambda x: calendar.month_name[x])
-
-# Calculate monthly cancellation counts
-monthly_counts = df['arrival_month_name'].value_counts().sort_index().to_dict() #Sorts the months in order
-
-total_count = len(df)
-
-print(f'En total existen {total_count} reservaciones activas con ninnos en esta base de datos')
-print("")
-
-print("\nMonthly Active Counts with children:")
-for month_name, count in monthly_counts.items():
-    print(f"{month_name}: {count}")
+cursor = data_coll.aggregate(pipeline)
+res = list(cursor)
+res_df = pd.DataFrame(res)
+res_df
 
 #%%
 # ### 6: las reservaciones especiales están relacionadas con niños?
 
-query = {"booking_status": {"$eq": "Not_Canceled"}, "no_of_children": {"$gt": 0}}
-atributos = {"Booking_ID": 1, "booking_status": 1, "arrival_month": 1, "no_of_special_requests": 1, "no_of_children": 1}
+#query = {"booking_status": {"$eq": "Not_Canceled"}}
+query = {}
+atributos = {"required_car_parking_space": 1, "repeated_guest": 1, "no_of_weekend_nights": 1, "no_of_special_requests": 1, "no_of_children": 1, "no_of_previous_bookings_not_canceled": 1, "no_of_previous_cancellations": 1, "no_of_week_nights": 1, "no_of_adults": 1, "lead_time": 1, "avg_price_per_room": 1}
 cursor = data_coll.find(query, atributos)
 df = pd.DataFrame(list(cursor))
 
-# Handle potential missing or invalid 'arrival_month' values
-df = df[df['arrival_month'].between(1, 12, inclusive='both')].copy()
+def plot_correlation_matrix(df, method='pearson', title_suffix='', show_values=True, figsize=(10, 8)):
+    """
+    Calculates and plots the correlation matrix of a Pandas DataFrame.
 
-# Month calculation (This was missing and caused the NameError)
-df['arrival_month_name'] = df['arrival_month'].apply(lambda x: calendar.month_name[x])
-monthly_counts = df['arrival_month_name'].value_counts().sort_index().to_dict()
+    Args:
+        df: The Pandas DataFrame.
+        method: The correlation method ('pearson', 'kendall', 'spearman').
+                Defaults to 'pearson'.
+        title_suffix: Optional suffix to add to the plot title.
+        show_values: Whether to display correlation coefficients on the heatmap.
+        figsize: Figure size as a tuple (width, height).
 
-total_count = len(df)
+    Returns:
+        None (displays the plot).  Returns the matplotlib Axes object.
+    """
 
-print(f'En total existen {total_count} reservaciones activas con ninnos en esta base de datos')
-print("")
+    if method not in ['pearson', 'kendall', 'spearman']:
+        raise ValueError("Invalid correlation method. Choose 'pearson', 'kendall', or 'spearman'.")
 
-print("\nMonthly Active Counts with children:")
-for month_name, count in monthly_counts.items():
-    print(f"{month_name}: {count}")
+    correlation_matrix = df.corr(method=method, numeric_only=True)
 
+    plt.figure(figsize=figsize)  # Set the figure size
+    sns.set(style="white")  # Set a clean style for the plot
 
-# Analyze the relationship between special requests and children
-if 'no_of_special_requests' in df.columns:
-    if pd.api.types.is_numeric_dtype(df['no_of_special_requests']):
-        correlation = df['no_of_special_requests'].corr(df['no_of_children'])
-        print(f"\nCorrelation between special requests and children: {correlation}")
+    # Generate a mask for the upper triangle (optional, but makes the plot cleaner)
+    mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))
 
-        print("\nDescriptive statistics for special requests:")
-        print(df['no_of_special_requests'].describe())
+    # Create the heatmap using seaborn
+    heatmap = sns.heatmap(
+        correlation_matrix,
+        mask=mask,            # Hide the upper triangle
+        cmap="RdBu",      # Choose a colormap (coolwarm, RdBu, etc.)
+        vmin=-1, vmax=1,      # Set the color scale limits
+        annot=show_values,     # Show the correlation values on the plot (optional)
+        fmt=".2f",           # Format the annotation values (2 decimal places)
+        linewidths=.5,         # Add lines between cells
+        cbar_kws={"shrink": .75},  # Shrink the colorbar
+        square=True           # Make cells square
+    )
 
-        print("\nAverage number of children by number of special requests:")
-        print(df.groupby('no_of_special_requests')['no_of_children'].mean())
+    # Add a title
+    plt.title(f'Correlation Matrix ({method}){title_suffix}', fontsize=16)
 
-    else:
-        print("\n'no_of_special_requests' column is not numeric. Cannot calculate correlation.")
-        print("Consider converting it to numeric if possible for correlation analysis.")
-else:
-    print("\n'no_of_special_requests' column not found in the data.")
+    # Rotate x-axis labels for better readability (optional, but often necessary)
+    plt.xticks(rotation=45, ha="right")
+    plt.yticks(rotation=0)
+
+    # Improve layout (avoid labels overlapping)
+    plt.tight_layout()
+
+    plt.show()
+
+    return heatmap.axes  # Return the axes for further customization if needed
+
+plot_correlation_matrix(df)  # Pearson by default
+#plot_correlation_matrix(df_clean, method='spearman', title_suffix=' (Spearman)', show_values=False, figsize=(8, 6))
+#plot_correlation_matrix(df_clean, method='kendall', title_suffix= ' using Kendall')
+
+correlation = df['no_of_special_requests'].corr(df['no_of_children'])
+
+print(f"\nCorrelation between special requests and children: {correlation}")
+print(f"\nTherefore, there is a slight correlation (not near 1 but higher than any other corr) between special reservations and reservations with children, in addition to avg room price and but also number of adults, which is a stronger correlation, what can suggests that special reservations could include children but also adults.")
+
 
 #%%
 # ### 7: en que segmento de mercado se cancelan más reservaciones?
 
+atributo = "market_segment_type"
 
+pipeline = [
+    {"$match": {"booking_status": "Canceled"}},
+    {"$group": {"_id": f"${atributo}", "Count": {"$sum": 1}}},
+    {"$sort" : {"Count":-1}}
+]
+
+cursor = data_coll.aggregate(pipeline)
+res = list(cursor)
+res_df = pd.DataFrame(res)
+res_df
 
 #%%
 # ### 8: se cancelan más reservaciones al inicio o al fin del mes?
+
+atributo = "arrival_date"
+
+pipeline = [
+    {"$match": {"booking_status": "Canceled"}},
+    {"$group": {"_id": f"${atributo}", "Count": {"$sum": 1}}},
+    {"$sort" : {"_id":1}}
+]
+
+cursor = data_coll.aggregate(pipeline)
+res = list(cursor)
+res_df = pd.DataFrame(res)
+res_df
+
+
 #%%
 # ### 9: identifique las reservaciones con niños o con pedidos especiales
 #%%
 # ### 10: como identificaría a las reservaciones asociadas a clientes VIP?
-#%%
+#%% Extra clase
+
+agregador = "room_type_reserved"
+value = "avg_price_per_room"
+
+pipeline = [
+    {"$match": {"arrival_year": {"$eq":2018}},
+     "$match": {"booking_status": {"$eq":"Not_Canceled"}}},
+    {"$group": {"_id": f"${atributo}", "total_income": {"$sum": f"${value}"}}},
+    {"$sort" : {"total_income":-1}}
+]
+
+cursor = data_coll.aggregate(pipeline)
+res = list(cursor)
+res_df = pd.DataFrame(res)
+res_df
+
 # %%
+
+
