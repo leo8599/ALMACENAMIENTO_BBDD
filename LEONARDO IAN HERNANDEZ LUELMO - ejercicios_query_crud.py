@@ -255,7 +255,9 @@ pipeline = [
 cursor = data_coll.aggregate(pipeline)
 res = list(cursor)
 res_df = pd.DataFrame(res)
-res_df
+
+print(f"\nEl segmento con mas reservaciones canceladas es Online con 8475")
+print(res_df)
 
 #%%
 # ### 8: se cancelan más reservaciones al inicio o al fin del mes?
@@ -271,13 +273,65 @@ pipeline = [
 cursor = data_coll.aggregate(pipeline)
 res = list(cursor)
 res_df = pd.DataFrame(res)
-res_df
+print(res_df)
 
 
 #%%
 # ### 9: identifique las reservaciones con niños o con pedidos especiales
+
+query = {"$or":[{"no_of_special_requests": {"$gt": 0},"no_of_children": {"$gt": 0}},
+                {"no_of_special_requests": {"$gt": 0},"no_of_children": {"$eq": 0}},
+                {"no_of_special_requests": {"$eq": 0},"no_of_children": {"$gt": 0}}]}
+
+atributos = {"Booking_ID":1,"no_of_special_requests":1,"no_of_children":1,"market_segment_type":1}
+
+cursor = data_coll.find(query,atributos)
+
+resultados = list(cursor)
+resultados
+
+for r in resultados:
+    print(f'{r["Booking_ID"]} | {r["no_of_special_requests"]} | {r["no_of_children"]} | {r["market_segment_type"]}')
+
+# Initialize counters
+with_children_and_request = 0
+with_children_no_request = 0
+no_children_with_request = 0
+no_children_no_request = 0
+
+for result in resultados:
+    has_children = result.get("no_of_children", 0) > 0
+    has_special_request = result.get("no_of_special_requests", 0) > 0
+
+    if has_children and has_special_request:
+        with_children_and_request += 1
+    elif has_children and not has_special_request:
+        with_children_no_request += 1
+    elif not has_children and has_special_request:
+        no_children_with_request += 1
+    else:
+        no_children_no_request += 1
+
+# Create a dictionary for the DataFrame
+data = {
+    "With Special Request": [with_children_and_request, no_children_with_request],
+    "Without Special Request": [with_children_no_request, no_children_no_request]
+}
+
+df = pd.DataFrame(data, index=["With Children", "Without Children"])
+
+print(df)
+
 #%%
 # ### 10: como identificaría a las reservaciones asociadas a clientes VIP?
+query = {}
+atributos = {"required_car_parking_space": 1, "repeated_guest": 1, "no_of_weekend_nights": 1, "no_of_special_requests": 1, "no_of_children": 1, "no_of_previous_bookings_not_canceled": 1, "no_of_previous_cancellations": 1, "no_of_week_nights": 1, "no_of_adults": 1, "lead_time": 1, "avg_price_per_room": 1}
+cursor = data_coll.find(query, atributos)
+df = pd.DataFrame(list(cursor))
+
+correlation = df['no_of_special_requests'].corr(df['avg_price_per_room'])
+print(f'Derivado de la matriz de correlacion podemos intuir que los clientes VIP pueden estar correlados con el numero de reservas especiales, dado que existe una relativa alta correlacion entre avg_price_per_room y numero de reservas especiales que es del {correlation}')
+
 #%% Extra clase
 
 agregador = "room_type_reserved"
