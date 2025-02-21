@@ -7,8 +7,8 @@ import yaml
 import pprint
 from pymongo import MongoClient
 
-# from pathlib import Path
-# import pandas as pd
+from pathlib import Path
+import pandas as pd
 
 # Utilizamos pprint para tener una mejor visualización de
 # los diccionarios y objetos.
@@ -34,9 +34,9 @@ data_db
 # Base de datos de autenticación
 
 servidor = MongoClient(
-    data_db["ip_servidor"],
-    data_db["puerto_servidor"],
-    username=data_db["usuario"],
+    data_db["ip_server"],
+    data_db["port_server"],
+    username=data_db["user"],
     password=data_db["password"],
     authSource=data_db["auth_db"]
 )
@@ -59,7 +59,7 @@ my_db.list_collection_names()
 # %% Seleccionamos la colección con la que vamos a trabajar
 
 # my_coll = my_db["cars_dataset"]
-my_coll = my_db["HotelReservations"]
+my_coll = my_db["hotels_dataset"]
 
 my_coll
 
@@ -70,19 +70,157 @@ pp.pprint(test_doc)
 
 # %%
 ## 1: Identifique las reservaciones activas y modifique su estado a "Arrived"
+query = {"booking_status": {"$eq": "Not_Canceled"}}
+
+cursor = my_coll.find(query)
+
+resultado = list(cursor)
+df = pd.DataFrame(resultado)
+
+df
+
+# replace
+
+# %% Identificar las reservaciones "Not_Canceled" de curtos "Room_Type 4" y cambiar
+# su estatus a "Arrived"
+
+query = {"$and": [
+        {"booking_status": {"$eq": "Not_Canceled"}},
+        {"room_type_reserved": {"$eq": "Room_Type 4"}}
+    ]
+}
+
+cursor = my_coll.find(query)
+
+resultado = list(cursor)
+df = pd.DataFrame(resultado)
+
+df
+# %%
+
+# query = {"$and": [
+#         {"booking_status": {"$eq": "Not_Canceled"}},
+#         {"room_type_reserved": {"$eq": "Room_Type 4"}}
+#     ]
+# }
+
+query = {"Booking_ID": {"$eq": "INN00001"}}
+
+# cursor = my_coll.find_one(query)
+
+my_coll.replace_one(query, {"booking_status": "Arrived"})
+
+cursor = my_coll.find_one(query)
+cursor
+
+# %%
+
+my_coll.update_many(
+     query,
+    #  {"$set": {"booking_status": "Arrived"}}
+     {"$set": {"booking_status": "Not_Canceled"}}
+)
+
+
+# %% update many
+
+# Sintaxis: my_coll.update_many({query}, {actualización})
+
+#my_coll.update_many(
+#     {"booking_status": {"$eq": "Not_Canceled"}},
+#      {"$set": {"booking_status": "Arrived"}}
+# )
+
+my_coll.update_many(
+    {"booking_status": {"$eq": "Arrived"}},
+     {"$set": {"booking_status": "Not_Canceled"}}
+)
+
+
+# %%
+
+#query = {"booking_status": {"$eq": "Arrived"}}
+query = {"booking_status": {"$eq": "Not_Canceled"}}
+
+cursor = my_coll.find(query)
+
+resultado = list(cursor)
+df = pd.DataFrame(resultado)
+
+df
 
 # %%
 ## 2: Identifique las reservaciones activas entre junio y agosto
 ### y agrege el campo "season" con el valor "summer"
 
+# respuesta 2
+query = {'$and':
+            [{'arrival_month': {'$gte': 6}},
+            {'arrival_month': {'$lte': 8}},
+            {'booking_status': {'$eq': 'Not_Canceled'}}
+            ]
+        }
+
+query = {
+    "$and": [
+        {
+            "$and": [
+                {"arrival_month": {"$gte": 6}},
+                {"arrival_month": {"$lte": 8}},
+            ]
+        },
+        {"booking_status": {"$eq": "Not_Canceled"}},
+    ]
+}
+
+
+update = {
+     '$set' : {'season' : 'summer'}
+}
+my_coll.update_many(
+     query, update
+)
+
+cursor = my_coll.find(query)
+resultado = list(cursor)
+df = pd.DataFrame(resultado)
+df
+
+
 # %%
 ## 3: Identifique las reservaciones activas entre  diciembre y marzo
 ## y agregue el campo "season" con el valor "winter"
+#1ra respuesta
+pipeline = [{"$match":{"booking_status":"Not_Canceled","arrival_month": {"$in":[12,1,2,3]}}},
+            {"$addFields":{"season":"winter"}},
+]
 
+#%% 2da respuesta
+query = {'$and':[
+    {'$or':
+         [{'arrival_month':{'$eq':12}},
+          {'arrival_month':{'$lte':3}}
+         ]},
+          {'booking_status':{'$eq':"Not_Canceled"}}
+]}
+
+update = {
+     '$set' : {'season' : 'winter'}
+}
+my_coll.update_many(
+     query, update
+)
+
+
+cursor = my_coll.find(query)
+resultado = list(cursor)
+df = pd.DataFrame(resultado)
+df
 
 # %%
 ## 4: Identifique las reservaciones con más week_nights que weekend_nights
 ## y agregue el campo "guest_type" con el valor "work"
+
 
 
 # %%
@@ -102,7 +240,8 @@ pp.pprint(test_doc)
 # %%
 ## 7.2: Calcule el total de perdidas por año por mes
 
-# %%
+
+# %% Datos de coches
 ## 8: Identifique las marcas unicas
 
 # %%
