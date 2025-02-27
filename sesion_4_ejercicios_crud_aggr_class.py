@@ -197,7 +197,7 @@ doc_original["season"] = "summer"
 
 nuevo_doc = doc_original
 
-my_coll.replace_one(query, nuevo_do)
+my_coll.replace_one(query, nuevo_doc)
 
 
 # %%
