@@ -34,9 +34,9 @@ data_db
 # Base de datos de autenticación
 
 servidor = MongoClient(
-    data_db["ip_servidor"],
-    data_db["puerto_servidor"],
-    username=data_db["usuario"],
+    data_db["ip_server"],
+    data_db["port_server"],
+    username=data_db["user"],
     password=data_db["password"],
     authSource=data_db["auth_db"],
 )
