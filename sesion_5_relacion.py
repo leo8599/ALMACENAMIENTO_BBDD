@@ -272,3 +272,13 @@ courses = [
 ]
 
 # %% Ejercicios
+# %% Insertar datos de courses en la base de datos
+# Crear (o referenciar) la colección courses
+courses_collection = my_db['teachers']
+
+# Insertar los documentos
+result = courses_collection.insert_many(teachers)
+
+# Verificar la inserción
+print(f"Se insertaron {len(result.inserted_ids)} documentos")
+#%%
