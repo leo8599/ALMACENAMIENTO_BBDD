@@ -87,7 +87,7 @@ data_path
 files_in_path = list(data_path.iterdir())
 files_in_path
 # %%
-data_file = files_in_path[2]
+data_file = files_in_path[3]
 data_file
 
 #%% We select the csv file that we are gonna workaaaaaaaaa
@@ -98,11 +98,16 @@ df_dict = df.to_dict(orient='records')
 df_dict[2]
 
 # %% Instert file to DB
-cars_coll = my_db["collaborations"]
+cars_coll = my_db["books_lends"]
 cars_coll
 
 doc = df_dict[0]
 doc
+
+# %% insert multiple docs from the df dick in one line/function
+cars_coll.insert_many(df_dict)
+
+
 # %%
 cars_coll.insert_one(doc)
 
@@ -118,7 +123,5 @@ cars_coll.drop()
 for doc in df_dict:
     print(doc)
     cars_coll.insert_one(doc)
-# %% insert multiple docs from the df dick in one line/function
-cars_coll.insert_many(df_dict)
 
 # %%
