@@ -151,5 +151,16 @@ pp.pprint(result[0])
 
 # %%
 
-df_artists = pd.read_csv(Path(data_path, "musical_collabs", "artists.csv"))
-df_collabs = pd.read_csv(Path(data_path, "musical_collabs", "collaborations.csv"))
+df_books = pd.read_csv(Path(data_path, "books.csv"))
+# df_lends = pd.read_csv(Path(data_path, "book_lends.csv"))
+# df_users = pd.read_csv(Path(data_path, "books_users.csv"))
+
+# %%
+
+# 1. Identificar los libros que cada usuario ha pedido prestado
+# 2. Identificar los libros más rentados por Male/Female
+
+# 3.0 Identificar los idiomas más frecuentes en los libros
+# 3.1 Identificar los libros más rentados por idioma (considerando el top 5 de idiomas) (español, inglés, francés)
+
+# 4 Identificar los libros más populares por estaciones (primavera, verano,  otoño, invierno)
