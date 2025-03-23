@@ -171,3 +171,107 @@ pp.pprint(result[3])
 print(len(result[3]["otros_artistas"]))
 
 # %%
+
+# Buscar las invitaciones que cada artista HACE a otros artistas
+relacion = artists_collection.aggregate([
+  {
+      "$lookup": {
+          "from": "collaborations",
+          "localField": "artist",
+          "foreignField": "artist1",
+          "as": "resultado_lookup"
+      }
+  },
+   {
+      "$project": {
+        #   "artist": 1,
+          "artista_inicial": "$artist",
+        #   "collab_songs": 1,
+          "total_canciones": "$collab_songs",
+          "total_colaboraciones": "$collab_individuals",
+          "otros_artistas": "$resultado_lookup.artist2",
+      }
+  }
+])
+
+result = list(relacion)
+pp.pprint(result[3])    
+
+print(len(result[3]["otros_artistas"]))
+
+# %%
+
+query = {"artist": {"$eq": "Arcángel"}}
+
+datos = {"artist": 1, "collab_songs": 1}
+# datos = {}
+
+cursor = artists_collection.find(query, datos)
+resultado = list(cursor)
+resultado
+
+# %%
+
+
+# Buscar las invitaciones que cada artista RECIBE de otros artistas
+relacion = artists_collection.aggregate([
+  {
+      "$lookup": {
+          "from": "collaborations",
+          "localField": "artist",
+          "foreignField": "artist2",
+          "as": "resultado_lookup"
+      }
+  }
+])
+
+result = list(relacion)
+pp.pprint(result[0])  
+
+# %% TAREA
+
+books_collection = my_db["books"]
+
+books_users_collection = my_db["books_users"]
+
+books_lends = my_db["books_lends"]
+
+#%%
+
+# Usando las colecciones books y books_users resuelve lo siguiente
+# 1. Identificar los libros que cada usuario ha pedido prestado
+
+relacion = books_lends.aggregate([
+        {
+            '$lookup': {
+                'from': 'books',
+                'localField': 'bookID',
+                'foreignField': 'id',
+                'as': 'book_info'
+            }
+        },
+        {
+            '$group': {
+                '_id': '$user_id',
+                'libros_prestados': {'$push': '$book_info.title'}
+            }
+        }
+])
+
+result = list(relacion)
+pp.pprint(result[69])
+
+#%%
+
+pp.pprint(result[3])
+
+# %%
+# 2. Identificar los libros más rentados por Male/Female
+
+# 3.0 Identificar los idiomas más frecuentes en los libros
+# 3.1 Identificar los libros más rentados por idioma (considerando el top 5 de idiomas) (español, inglés, francés)
+
+# 4 Identificar los libros más populares por estaciones (primavera, verano,  otoño, invierno)
+
+
+# %%
